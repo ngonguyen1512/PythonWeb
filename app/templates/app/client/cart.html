@@ -1,0 +1,88 @@
+{% extends 'app/base_client/base.html' %}
+{% load humanize %}
+{% block cp_main %}
+<div class="cart">
+    <div class="your_cart">
+        <p class="header_cart center">YOUR CART</p>
+        <div class="cart_product">
+            {% if total_items == 0 %}
+            <p>You have not a product in your cart</p>
+            {% else %}
+            <div class="table_product">
+                <table>
+                    {% for item in items %}
+                    {% for message in messages %}
+                    <div class="alert alert-warning">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                    <tr>
+                        <td style="width: 15%;">
+                            <img src="{{item.product.image.url}}" alt="image" style="width: 100%;" />
+                        </td>
+                        <td style="width: 25%;">
+                            <p class="name_product">{{item.product.name}}</p>
+                            <div class="color-size">
+                                <p>{{item.product.color.name}}</p>
+                                <p>{{item.size}}</p>
+                            </div>
+                        </td>
+                        <td class="quantity ">
+                            <button data-product={{item.product.id}} data-size={{item.size}} data-action="remove"
+                                class="button_quantity update-cart">-</button>
+                            <span class="number_quantity">{{item.quantity}}</span>
+                            <button data-product={{item.product.id}} data-size={{item.size}} data-action="add"
+                                class="button_quantity update-cart">+</button>
+                        </td>
+                        <td style="text-align: center; font-size: large; width: 18%;">
+                            {% if item.product.discount != 0 %}
+                            {{item.product.price|intcomma}}đ<span class="discount">-{{item.product.discount}}%</span>
+                            {%else%}
+                            {{item.product.price|intcomma}}đ
+                            {%endif%}
+                        </td>
+                        <td class="amount-trash" style="text-align: center; width: 18%">
+                            <p>Amount</p>
+                            <p class="amount">{{item.amount|intcomma}}đ</p>
+                            <button data-product={{item.product.id}} data-size={{item.size}} data-action="delete"
+                                class=" trash update-cart"><i class='bx bx-trash'></i></button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            {% endif %}
+            <div class="policy_product">
+                <p class="header_policy">Exchange / return policy</p>
+                <ul>
+                    <li>The product can be exchanged only once, no return support.</li>
+                    <li>The product still has enough stamps, has not been used.</li>
+                    <li>Full-priced products can be exchanged in 30 days throughout the system.</li>
+                    <li>Sale products only support changing size (if the store is available) for 7 days throughout the
+                        system.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="cart_infor">
+        <p class="header_info end">
+            <a href="{% url 'home' %}">Keep buying <i class='bx bx-right-arrow-alt'></i></a>
+        </p>
+        <div class="information">
+            <p class="title">Order information</p>
+            <div class="total between">
+                <p>Total:</p>
+                <p id="total-amount">{{total_price|intcomma}}đ</p>
+
+            </div>
+            <div class="btn_payment">
+                {% if total_items == 0 %}
+                <p style='font-weight: 500'>You cannot check out if there are no products in your cart.</p>
+                {% else %}
+                <a href="{% url 'payment' %}" class="a_button center">CHECKOUT</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock cp_main %}

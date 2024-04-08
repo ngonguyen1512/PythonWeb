@@ -1,0 +1,101 @@
+{% extends 'app/base_client/base.html' %}
+{% load humanize %}
+{% block cp_main %}
+<form method="POST">
+    {% csrf_token %}
+    <div class="payment">
+        <div class="product_infor">
+            <div class="product_select">
+                <div class="table_product">
+                    <table>
+                        {% for item in items %}
+                        <tr>
+                            <td style="width: 15%;">
+                                <img src="{{item.product.image.url}}" alt="image" style="width: 100%;" />
+                            </td>
+                            <td>
+                                <p class="name_product">{{item.product.name}}</p>
+                                <div class="color-size">
+                                    <p>{{item.product.color.name}}</p>
+                                    <p>{{item.size}}</p>
+                                </div>
+                            </td>
+                            <td class="quantity ">
+                                <span class="number_quantity">{{item.quantity}}</span>
+                            </td>
+                            <td class="amount" style="text-align: end;">
+                                {{item.amount|intcomma}}đ
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+
+            </div>
+            <div class="temporary_calculation">
+                <div class="temporary between">
+                    <p>Temporary</p>
+                    <p class="number">{{total_price|intcomma}}đ</p>
+                </div>
+                <div class="transport between">
+                    <p>Transport fee</p>
+                    <p class="number">35,000đ</p>
+                </div>
+            </div>
+            <div class="total_order between">
+                <p>Total</p>
+                <div class="number_total end">
+                    <p class="currency_unit">VND</p>
+                    <p>{{ total_order|intcomma }}đ</p>
+                    <input type="hidden" name="total" value="{{ total_order }}">
+                </div>
+            </div>
+        </div>
+        <div class="input_infor">
+
+            <p class="header_input">FASHION</p>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'cart' %}">Cart</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Shipment Details</li>
+                </ol>
+            </nav>
+            <p class="title_input">Information</p>
+            <div class="input_detail">
+                <div class="input_name">
+                    <input type="text" name="lastname" value="{{ request.user.last_name }}" />
+                    <input type="text" name="firstname" value="{{ request.user.first_name }}" />
+                </div>
+                <div class="email-phone">
+                    <input class="email" type="email" name="email" value="{{ request.user.email }}" />
+                    <input type="number" name="phone" placeholder="Phone">
+                </div>
+                <input type="text" name="address" placeholder="Address">
+            </div>
+            <div class="transportation_method">
+                <p class="title_transport">Transportation Method</p>
+                <div class="frame_transport between">
+                    <div class="transportmethod">
+                        <input type="radio" name="transport" value="delivery" checked>
+                        <label>Delivery</label>
+                    </div>
+                    <div class="fee_ship text-center center">35,000đ</div>
+                </div>
+            </div>
+            <div class="payment_method">
+                <p class="title_payment">Payment Method</p>
+                <div class="frame_payment">
+                    <div class="paymentmethod">
+                        <input type="radio" name="payment" value="payment" checked>
+                        <label><i class='bx bx-package'></i>Payment on delivery (COD)</label>
+                    </div>
+                </div>
+            </div>
+            <div class="cart-complete">
+                <a href="{% url 'cart'%}">Cart</a>
+                <button type="submit" class="button">Complete Order</button>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock cp_main %}

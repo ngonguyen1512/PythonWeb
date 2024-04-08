@@ -1,0 +1,198 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static humanize %}
+
+{% block extrastyle %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin/css/dashboard.css' %}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block coltype %}colMS{% endblock %}
+
+{% block bodyclass %}{{ block.super }}dashboard{% endblock %}
+
+{% block nav-breadcrumbs %}{% endblock %}
+
+{% block nav-sidebar %}
+{% include "admin/nav_sidebar.html" %}
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="main-box">
+        <div class="income cell">
+            <div class="total_income box" style="border: 1px solid #008000;">
+                <div class="icon" style="background-color: #008000; color: #fff">
+                    <i class="uil uil-wallet"></i>
+                </div>
+                <div class="subject" style="color:#008000">
+                    <div class="title">TOTAL REVENUE</div>
+                    <div class="money end">{{ total_revenue|intcomma }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="income cell">
+            <div class="total_income box" style="border: 1px solid #ffe100;">
+                <div class="icon" style="background-color: #ffe100; color: #fff">
+                    <i class="uil uil-coins"></i>
+                </div>
+                <div class="subject" style="color:#ffe100">
+                    <div class="title">MONTHLY REVENUE</div>
+                    <div class="money end">{{ monthly_total_revenue|intcomma }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="bill cell">
+            <div class="total_income box" style="border: 1px solid #0044ff;">
+                <div class="icon" style="background-color: #0044ff; color: #fff">
+                    <i class="uil uil-receipt"></i>
+                </div>
+                <div class="subject" style="color:#0044ff">
+                    <div class="title">INVOICE</div>
+                    <div class="money end">{{ number_of_orders|intcomma }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="product cell">
+            <div class="total_income box" style="border: 1px solid #808080;">
+                <div class="icon" style="background-color: #808080; color: #fff">
+                    <i class="uil uil-apps"></i>
+                </div>
+                <div class="subject" style="color:#808080">
+                    <div class="title">PRODUCT</div>
+                    <div class="money end">{{ number_of_products|intcomma }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="staff cell">
+            <div class="total_income box" style="border: 1px solid #ff7a7a;">
+                <div class="icon" style="background-color: #ff7a7a; color: #fff">
+                    <i class="uil uil-users-alt"></i>
+                </div>
+                <div class="subject" style="color:#ff7a7a">
+                    <div class="title">EMPLOYEE</div>
+                    <div class="money end">{{ number_of_employees|intcomma }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="customer cell">
+            <div class="total_income box" style="border: 1px solid #000;">
+                <div class="icon" style="background-color: #000; color: #fff">
+                    <i class="uil uil-user"></i>
+                </div>
+                <div class="subject" style="color:#000">
+                    <div class="title">CUSTOMER</div>
+                    <div class="money end">{{ number_of_customers|intcomma }}</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <div class="chart center" style="width: 100%; margin: 2% 0">
+        <canvas id="revenueChart" width="100%"></canvas>
+    </div>
+    <div class="top_chart">
+        <div class="top-products">
+            <form method="get" action="" class="between">
+                <span for="product_count">Top Selling Products</span>
+                <input type="number" id="product_count" style="width: 50px" name="product_count" min="1"
+                    value="{{ product_count }}">
+                <input type="submit" value="Filter">
+            </form>
+
+            <table class="table" style="width: 100%; margin-top: 1%;">
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">Image</th>
+                        <th style="text-align: center;">Name</th>
+                        <th style="text-align: center;">Quantity Sold</th>
+                        <th style="text-align: center;">Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in top_selling_products %}
+                    <tr>
+                        <td><img src="{% static 'images/'|add:product.imageURL %}" alt="{{ product.name }}" width="50">
+                        </td>
+                        <td>{{ product.name }}</td>
+                        <td style="text-align: center;">{{ product.total_quantity|intcomma }}</td>
+                        <td style="text-align: center;">{{ product.price|intcomma }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="chart_quantityr" style="width: 50%; ">
+            <canvas id="quantityChart" width="100%"></canvas>
+        </div>
+    </div>
+</div>
+<script>
+
+    var ctx = document.getElementById('revenueChart').getContext('2d');
+    var ctx2 = document.getElementById('quantityChart').getContext('2d');
+    var dailyRevenue = {{ daily_revenue| safe }};
+    var dailyOrderCount = {{ daily_order_count| safe }};
+    var weeklyRevenueDates = {{ weekly_revenue_dates| safe }};
+
+    var revenueChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: weeklyRevenueDates,
+            datasets: [{
+                label: 'Daily Revenue',
+                data: dailyRevenue,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1,
+                yAxisID: 'revenueYAxis'
+            }]
+        },
+        options: {
+            scales: {
+                revenueYAxis: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    id: 'revenueYAxis',
+                    ticks: {
+                        callback: function (value, index, values) {
+                            return value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    var quantityChart = new Chart(ctx2, {
+        type: 'line',
+        data: {
+            labels: weeklyRevenueDates,
+            datasets: [{
+                label: 'Daily Order Count',
+                data: dailyOrderCount,
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1,
+                yAxisID: 'orderYAxis'
+            }]
+        },
+        options: {
+            scales: {
+                orderYAxis: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    id: 'orderYAxis',
+                    ticks: {
+                        beginAtZero: true,
+                        callback: function (value, index, values) {
+                            return value.toLocaleString('vi-VN');
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

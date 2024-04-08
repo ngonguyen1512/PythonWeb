@@ -1,0 +1,144 @@
+{% extends 'app/base_client/base.html' %}
+{% load static %}
+{% block detail %}
+{% load humanize %}
+{% for productget in productsgets %}
+<div class="detail ">
+    <div class="image center">
+        <img src="{{productget.image.url}}" class="card-img-top" alt="image">
+    </div>
+    <div class=" content">
+        <form action="" method="POST">
+            {% csrf_token %}
+            <div class="content_name-like">
+                <h1>{{productget.name}}</h1>
+                {% if request.user.is_authenticated %}
+                <div class="like-unlike">
+                    <input type="hidden" name="productid" value="{{productget.id}}" />
+                    <button id="likeButton" class="like">
+                        {% if is_liked %}
+                        <i class='bx bxs-heart'></i>
+                        {% else %}
+                        <i class='bx bx-heart'></i>
+                        {% endif %}
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </form>
+        <span class="content_id">ID: {{productget.id}}</span>
+        <div class='content_price'>
+            {% if productget.discount == 0 %}
+            <p class="price" style="margin: 5% 0;">{{productget.price|intcomma}}<span>đ</span></p>
+            {% else %}
+            <div class='promotion'>
+                <p class="discount">-{{productget.discount}}%</p>
+                <p class="price">{{ productget.discounted_price|floatformat:0|intcomma }}<span>đ</span></p>
+                <p class="price_origin">{{productget.price|intcomma}}<span>đ</span></p>
+            </div>
+            {% endif %}
+        </div>
+        <div class="content_color">
+            <div class="color" style="background-color: {{ productget.color }}"></div>
+        </div>
+        <div class="content_size">
+            {% for quantity in quantities %}
+            <div class="size">
+                <button data-id="{{quantity.size}}" class="button" data-size="{{quantity.size}}"
+                    onclick="selectButton(this)">
+                    {{quantity.size}}
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="content_button">
+            <div class="addcart">
+                <button data-product="{{productget.id}}" data-action="add" class="button update-cart" onlick="">
+                    ADD TO CART
+                </button>
+            </div>
+            <div class="buycart">
+                <button data-product="{{productget.id}}" data-action="add" class="button buy-cart">BUY NOW</button>
+            </div>
+        </div>
+        <div id="alertContainer"></div>
+        <div class="content_information">
+            <p id="product_info">{{ productget.infor }}</p>
+        </div>
+    </div>
+</div>
+<p class="header_similar center">RELATED PRODUCTS</p>
+<div class="bestseller">
+    {% for product in products%}
+    <a style="text-decoration: none; color: #000;"
+        href="{% url 'detail' categories=product.category|slugify samples=product.sample|slugify productname=product.name|slugify productid=product.id%}">
+        <div class="items">
+            <div class="card border-0" style="width: 100%;">
+                <div class="images">
+                    <img src="{{product.imageURL}}" class="card-img-top" alt="{{product.name}}">
+                </div>
+                <div class="card-body">
+                    <form action="" method="POST">
+                        {% csrf_token %}
+                        <div class="cart-text name-like_unlike">
+                            <p class="">{{product.name}}</p>
+                            {% if request.user.is_authenticated %}
+                            <div class="like-unlike">
+                                <input type="hidden" name="productsid" value="{{product.id}}" />
+                                <button id="likeButton" class="like">
+                                    {% if product.is_liked %}
+                                    <i class='bx bxs-heart'></i>
+                                    {% else %}
+                                    <i class='bx bx-heart'></i>
+                                    {% endif %}
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </form>
+                    {% if product.discount == 0 %}
+                    <div class="card-text text-center">
+                        <p class="price">{{product.price|intcomma}}<span>đ</span></p>
+                    </div>
+                    {% else %}
+                    <div class="card-text center promotion">
+                        <p class="discount">-{{product.discount}}%</p>
+                        <p class="price">{{ product.discounted_price|floatformat:0|intcomma }}<span>đ</span></p>
+                        <p class="price_origin">{{product.price|intcomma}}<span>đ</span></p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+<script>
+
+    $(document).ready(function () {
+        var info = $('#product_info').text();
+        $('#product_info').html(info.replace(/\./g, '.<br>'));
+    });
+    window.onload = function () {
+        var firstButton = document.querySelector('.button');
+        selectButton(firstButton);
+    };
+
+    function selectButton(button) {
+        // Remove 'selected' class from all buttons
+        var buttons = document.querySelectorAll('.button');
+        buttons.forEach(function (btn) {
+            btn.classList.remove('selected');
+            btn.style.backgroundColor = '#fff';
+            btn.style.color = '#000';
+        });
+
+        // Add 'selected' class and style to the clicked button
+        button.classList.add('selected');
+        button.style.backgroundColor = '#000';
+        button.style.color = '#fff';
+    }
+</script>
+{% endfor %}
+{% endblock detail %}

@@ -1,0 +1,7 @@
+{% extends 'app/base_client/base.html' %}
+{% block main %}
+<h2 style="padding: 2% 8% 0 8%;">Result search for: {{searched}}</h2>
+<div class="main">
+    {% include 'app/component/item.html'%}
+</div>
+{% endblock main %}

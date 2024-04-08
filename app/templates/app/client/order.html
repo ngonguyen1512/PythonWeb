@@ -1,0 +1,178 @@
+{% extends 'app/base_client/base.html' %}
+{% load humanize %}
+{% block origin %}
+<div class="personal">
+    <div class="personal_title" style="text-align: center;">
+        <h2>ORDER</h2>
+        <p>{{request.user}}</p>
+    </div>
+    <div class="personal_content">
+        <div class="personal_side">
+            <ul>
+                <li>
+                    <a href="{% url 'personal' %}">Information</a>
+                </li>
+                <li>
+                    <a href="{% url 'order' %}">Order</a>
+                </li>
+                <li>
+                    <a href="{% url 'like' %}">Like</a>
+                </li>
+            </ul>
+        </div>
+        <div class="personal_main">
+            <div class="main_table">
+                {% if orders %}
+                <table class="table" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th scope="col">STT</th>
+                            <th scope="col">ID</th>
+                            <th scope="col">DATE</th>
+                            <th scope="col">FEE</th>
+                            <th scope="col">TOTAL</th>
+                            <th scope="col">ACCEPT</th>
+                            <th scope="col">SHIPPER</th>
+                            <th scope="col">STATE</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <th scope="row">{{ forloop.counter }}</th>
+                            <td>{{ order.id }}</td>
+                            <td>{{ order.date|date:"Y-m-d" }}</td>
+                            <td>{{ order.fee|intcomma }}đ</td>
+                            <td>{{ order.total|intcomma }}đ</td>
+                            <td>{{ order.accept }}đ</td>
+                            <td>{{ order.shipper }}đ</td>
+                            {% if order.state.name == "Wait" %}
+                            <td style="color: #FFD700">{{ order.state }}</td>
+                            {% elif order.state.name == "Delivery" %}
+                            <td style="color: #0000FF">{{ order.state }}</td>
+                            {% elif order.state.name == "Done" %}
+                            <td style="color: #3CB371">{{ order.state }}</td>
+                            {% elif order.state.name == "Unsuccessful" %}
+                            <td style="color: #ffa500">{{ order.state }}</td>
+                            {% else %}
+                            <td style="color: #ff0000">{{ order.state }}</td>
+                            {% endif %}
+                            <td>
+                                <button class="detail_button" data-target="order_detail_{{ forloop.counter }}"><i
+                                        class='bx bx-comment-detail'></i></button>
+                            </td>
+                        </tr>
+                        <tr class="explanation" style="display: none;">
+                            <td colspan="9">{{ order.explanation }}</td>
+                        </tr>
+                        <tr class="detail" style="display: none;">
+                            <td colspan="9">
+                                <table id="order_detail_{{ forloop.counter }}"
+                                    class="order_detail table table-striped table-hover"
+                                    style="width: 100%; display: none; overflow: auto;">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col" style="width: 7%; text-align: center;">STT</th>
+                                            <th scope="col" style="text-align: center;width: 23%">Product</th>
+                                            <th scope="col" style="text-align: center;width: 8%">Color</th>
+                                            <th scope="col" style="text-align: center;width: 8%">Size</th>
+                                            <th scope="col" style="text-align: center;width: 10%">Quantity</th>
+                                            <th scope="col" style="text-align: center;width: 15%">Price</th>
+                                            <th scope="col" style="text-align: center;width: 10%">Discount</th>
+                                            <th scope="col" style="text-align: center;width: 15%">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for order_item in order_items %}
+                                        {% if order_item.order.id == order.id %}
+                                        <tr>
+                                            <td scope="row" style="text-align: center;">{{ forloop.counter }}</td>
+                                            <td>{{ order_item.product }}</td>
+                                            <td style="text-align: center;">{{ order_item.color }}</td>
+                                            <td style="text-align: center;">{{ order_item.size }}</td>
+                                            <td style="text-align: center;">{{ order_item.quantity }}</td>
+                                            <td style="text-align: center;">{{ order_item.price }}</td>
+                                            <td style="text-align: center;">{{ order_item.discount }}</td>
+                                            <td style="text-align: center;">{{ order_item.amount }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+            </div>
+
+            <div>You have not placed any orders yet.</div>
+            {% endif %}
+            <div class="pagination end">
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination center">
+                        {% if orders.paginator.num_pages > 1 %}
+                        {% if orders.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ orders.previous_page_number }}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in orders.paginator.page_range %}
+                        <li class="page-item {% if num == orders.number %}active{% endif %}">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endfor %}
+
+                        {% if orders.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ orders.next_page_number }}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll('.detail_button').forEach(button => {
+        button.addEventListener('click', function () {
+            const targetId = this.getAttribute('data-target');
+            const target = document.getElementById(targetId);
+            const explanation = this.parentElement.parentElement.nextElementSibling;
+            const detail = this.parentElement.parentElement.nextElementSibling.nextElementSibling;
+
+            if (target) {
+                target.style.display = target.style.display === 'none' ? 'block' : 'none';
+            }
+
+            if (explanation) {
+                if (explanation.textContent.trim() !== "") {
+                    if (explanation.style.display === 'none') {
+                        explanation.style.display = 'table-row';
+                    } else {
+                        explanation.style.display = 'none';
+                    }
+                }
+            }
+
+            if (detail && detail.style.display === 'none') {
+                detail.style.display = 'table-row';
+            } else if (detail) {
+                detail.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock origin %}

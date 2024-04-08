@@ -1,0 +1,112 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- css -->
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/style_client.css' %}?v=2">
+    <link rel="stylesheet" type="text/css" href="{% static 'app/css/responsive_client.css' %}?v=2">
+
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <!-- js -->
+    <script type="text/javascript">
+        var user = '{{request.user}}'
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+    </script>
+    <script src="https://unpkg.com/boxicons@2.1.4/dist/boxicons.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+        integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"
+        integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+"
+        crossorigin="anonymous"></script>
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/ion-rangeslider/2.3.1/css/ion.rangeSlider.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ion-rangeslider/2.3.1/js/ion.rangeSlider.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.js"
+        integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <title>PythonWeb</title>
+</head>
+
+<body>
+    {% load humanize %}
+    {% include 'app/base_client/header.html' with categories=categories samples=samples %}
+    {% block register_login_forgot %}{% endblock %}
+    {% if request.path == '/' and customer and similar_products%}
+    {% block buymore %}
+    <div class="buymore">
+        <div class="close end"><i class='bx bx-x' id="closeBtn"></i></div>
+        <div class="item_buymore">
+            {% for similar in similar_products%}
+            <a style="text-decoration: none; color: #000;"
+                href="{% url 'detail' categories=similar.category|slugify samples=similar.sample|slugify productname=similar.name|slugify productid=similar.id%}">
+                <div class="item">
+                    <div class="card border-0" style="width: 100%;">
+                        <div class="images">
+                            <img src="{{similar.imageURL}}" class="card-img-top" alt="{{similar.name}}">
+                        </div>
+                        <div class="card-body">
+                            <form action="" method="POST">
+                                {% csrf_token %}
+                                <div class="cart-text name-like_unlike">
+                                    <p class="">{{similar.name}}</p>
+                                </div>
+                            </form>
+                            {% if similar.discount == 0 %}
+                            <div class="card-text text-center">
+                                <p class="price">{{similar.price|intcomma}}<span>đ</span></p>
+                            </div>
+                            {% else %}
+                            <div class="card-text center promotion">
+                                <p class="discount">-{{similar.discount}}%</p>
+                                <p class="price">{{ similar.discounted_price|floatformat:0|intcomma }}<span>đ</span></p>
+                                <p class="price_origin">{{similar.price|intcomma}}<span>đ</span></p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endblock %}
+    {% endif %}
+    {% block slide %}{% endblock slide %}
+    {% block title%}{% endblock title%}
+    {% block main %}{% endblock main %}
+    {% block origin %}{% endblock origin %}
+    {% block detail %}{% endblock detail %}
+    {% block cp_main %}{% endblock cp_main %}
+    {% include 'app/base_client/footer.html' %}
+    <footer class="fixed-bottom container--fluid text-center p-1 bg-body-tertiary">PYTHON 2024</footer>
+    <script src="{% static 'app/js/cart.js' %}?v=2"></script>
+    <script>
+        document.getElementById("closeBtn").addEventListener("click", function () {
+            document.querySelector(".buymore").style.display = "none";
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,11 @@
+{% extends 'app/base_client/base.html' %}
+{% load static %}
+{% block title%}
+<h1 class="rental_title center">{{ samples_title }}</h1>
+{% endblock title %}
+{% block main %}
+<div class="main">
+    {% include 'app/component/item.html'%}
+</div>
+{% include 'app/component/pagination.html'%}
+{% endblock main %}

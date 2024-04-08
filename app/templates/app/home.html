@@ -1,0 +1,112 @@
+{% extends 'app/base_client/base.html' %}
+{% load static %}
+{% block slide %}
+{% include 'app/component/slideshow.html'%}
+{% endblock slide %}
+{% load humanize %}
+{% block main %}
+
+<div class="seller">
+    <h3 class="center">BEST SELLER</h3>
+    <div class="bestseller">
+        {% for seller in sellers reversed%}
+        <a style="text-decoration: none; color: #000;"
+            href="{% url 'detail' categories=seller.category|slugify samples=seller.sample|slugify productname=seller.name|slugify productid=seller.id%}">
+            <div class="items">
+                <div class="card border-0" style="width: 100%;">
+                    <div class="images">
+                        <img src="{{seller.imageURL}}" class="card-img-top" alt="{{seller.name}}">
+                    </div>
+                    <div class="card-body">
+                        <form action="" method="POST">
+                            {% csrf_token %}
+                            <div class="cart-text name-like_unlike">
+                                <p class="">{{seller.name}}</p>
+                                {% if request.user.is_authenticated %}
+                                <div class="like-unlike">
+                                    <input type="hidden" name="productid" value="{{seller.id}}" />
+
+                                    <button id="likeButton" class="like">
+                                        {% if seller.is_liked %}
+                                        <i class='bx bxs-heart'></i>
+                                        {% else %}
+                                        <i class='bx bx-heart'></i>
+                                        {% endif %}
+                                    </button>
+
+                                </div>
+                                {% endif %}
+                            </div>
+                        </form>
+                        {% if seller.discount == 0 %}
+                        <div class="card-text text-center">
+                            <p class="price">{{seller.price|intcomma}}<span>đ</span></p>
+                        </div>
+                        {% else %}
+                        <div class="card-text center promotion">
+                            <p class="discount">-{{seller.discount}}%</p>
+                            <p class="price">{{ seller.discounted_price|floatformat:0|intcomma }}<span>đ</span></p>
+                            <p class="price_origin">{{seller.price|intcomma}}<span>đ</span></p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+<div class="seller">
+    <h3 class="center">SALES</h3>
+    <div class="bestseller">
+        {% for promotion in promotions %}
+        <a style="text-decoration: none; color: #000;"
+            href="{% url 'detail' categories=promotion.category|slugify samples=promotion.sample|slugify productname=promotion.name|slugify productid=promotion.id%}">
+            <div class="items">
+                <div class="card border-0" style="width: 100%;">
+                    <div class="images">
+                        <img src="{{promotion.imageURL}}" class="card-img-top" alt="{{promotion.name}}">
+                    </div>
+                    <div class="card-body">
+                        <form action="" method="POST">
+                            {% csrf_token %}
+                            <div class="cart-text name-like_unlike">
+                                <p class="">{{promotion.name}}</p>
+                                {% if request.user.is_authenticated %}
+                                <div class="like-unlike">
+                                    <input type="hidden" name="promotionid" value="{{promotion.id}}" />
+
+                                    <button id="likeButton" class="like">
+                                        {% if promotion.is_liked %}
+                                        <i class='bx bxs-heart'></i>
+                                        {% else %}
+                                        <i class='bx bx-heart'></i>
+                                        {% endif %}
+                                    </button>
+
+                                </div>
+                                {% endif %}
+                            </div>
+                        </form>
+                        <div class="card-text center promotion">
+                            <p class="discount">-{{promotion.discount}}%</p>
+                            <p class="price">{{ promotion.discounted_price|floatformat:0|intcomma }}<span>đ</span></p>
+                            <p class="price_origin">{{promotion.price|intcomma}}<span>đ</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+<h3 class="center" style="padding-top:2%; font-weight: 700; letter-spacing: 0.25em;">PRODUCTS</h3>
+<div class="main">
+    {% include 'app/component/item.html'%}
+</div>
+{% if products.has_next %}
+<div class="text-center" style="margin: 3%;">
+    <a href="{% url 'all' %}?page=1" class="a_button">Load more</a>
+</div>
+{% endif %}
+{% endblock main %}

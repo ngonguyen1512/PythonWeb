@@ -1,0 +1,115 @@
+{% extends 'app/base_client/base.html' %}
+{% block origin %}
+{% load humanize %}
+<div class="personal">
+    <div class="personal_title" style="text-align: center;">
+        <h2>LIKE</h2>
+        <p>{{request.user}}</p>
+    </div>
+    <div class="personal_content">
+        <div class="personal_side">
+            <ul>
+                <li>
+                    <a href="{% url 'personal' %}">Information</a>
+                </li>
+                <li>
+                    <a href="{% url 'order' %}">Order</a>
+                </li>
+                <li>
+                    <a href="{% url 'like' %}">Like</a>
+                </li>
+            </ul>
+        </div>
+        <div class="personal_main">
+            <div class="pagination end">
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination center">
+                        {% if products.paginator.num_pages > 1 %}
+                        {% if products.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ products.previous_page_number }}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in products.paginator.page_range %}
+                        {% if products.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if products.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ products.next_page_number }}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+
+            <div class="personal_item">
+                {% for product in products %}
+                <a style="text-decoration: none; color: #000;"
+                    href="{% url 'detail' categories=product.category|slugify samples=product.sample|slugify productname=product.name|slugify productid=product.id%}">
+                    <div class="item">
+                        <div class="card border-0" style="width: 90%;">
+                            <div class="images">
+                                <img src="{{product.imageURL}}" class="card-img-top" alt="image">
+                            </div>
+                            <div class="card-body">
+                                <form action="" method="POST">
+                                    {% csrf_token %}
+                                    <div class="cart-text name-like_unlike">
+                                        <p class="">{{product.name}}</p>
+                                        <div class="like-unlike">
+                                            <input type="hidden" name="productsid" value="{{product.id}}" />
+                                            <button id="likeButton" class="like">
+                                                {% if product.is_liked %}
+                                                <i class='bx bxs-heart'></i>
+                                                {% else %}
+                                                <i class='bx bx-heart'></i>
+                                                {% endif %}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                                {% if product.discount == 0 %}
+                                <div class="card-text text-center">
+                                    <p class="price">{{product.price|intcomma}}<span>đ</span></p>
+                                </div>
+                                {% else %}
+                                <div class="card-text center promotion">
+                                    <p class="discount">-{{product.discount}}%</p>
+                                    <p class="price">{{ product.discounted_price|floatformat:0|intcomma }}<span>đ</span>
+                                    </p>
+                                    <p class="price_origin">{{product.price|intcomma}}<span>đ</span></p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.querySelectorAll('.like').forEach(function (button) {
+        button.addEventListener('click', function (event) {
+            // Ngăn chặn sự kiện lan truyền lên thẻ <a>
+            event.stopPropagation();
+        });
+    });
+</script>
+{% endblock origin %}

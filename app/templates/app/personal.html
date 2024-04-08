@@ -1,0 +1,67 @@
+{% extends 'app/base_client/base.html' %}
+{% block origin %}
+<div class="personal">
+    <div class="personal_title" style="text-align: center;">
+        <h2>INFORMATION</h2>
+        <p>{{request.user}}</p>
+    </div>
+    <div class="personal_content">
+        <div class="personal_side">
+            <ul>
+                <li>
+                    <a href="{% url 'personal' %}">Information</a>
+                </li>
+                <li>
+                    <a href="{% url 'order' %}">Order</a>
+                </li>
+                <li>
+                    <a href="{% url 'like' %}">Like</a>
+                </li>
+            </ul>
+        </div>
+        <div class="personal_main">
+            <form class="mx-1 mx-md-4" method="POST">
+                {% csrf_token %}
+                <div class="d-flex flex-row align-items-center mb-4">
+                    <div class="form-outline flex-fill mb-0">
+                        <label class="form-label" for="form3Example1c">Username</label>
+                        <input type="text" name="username" value="{{request.user.username}}" aria-label="username" />
+                    </div>
+                </div>
+
+                <div class="d-flex flex-row align-items-center mb-4">
+                    <div class="form-outline flex-fill mb-0">
+                        <label class="form-label" for="form3Example1c">Last Name</label>
+                        <input type="text" name="lastname" value="{{ request.user.last_name }}" aria-label="lastname" />
+                    </div>
+                </div>
+
+                <div class="d-flex flex-row align-items-center mb-4">
+                    <div class="form-outline flex-fill mb-0">
+                        <label class="form-label" for="form3Example1c">First Name</label>
+                        <input type="text" name="firstname" value="{{ request.user.first_name }}"
+                            aria-label="firstname" />
+                    </div>
+                </div>
+
+                <div class="d-flex flex-row align-items-center mb-4">
+                    <div class="form-outline flex-fill mb-0">
+                        <label class="form-label" for="form3Example1c">Email</label>
+                        <input class="email" type="email" name="email" value="{{ request.user.email }}"
+                            aria-label="email" />
+                    </div>
+                </div>
+                {% for message in messages %}
+                <div
+                    class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+                <div class="d-flex justify-content-center  mb-3 mb-lg-4 btn">
+                    <button type="submit" class=" btn-lg btn-personal">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock origin %}

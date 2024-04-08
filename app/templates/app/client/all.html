@@ -1,0 +1,118 @@
+{% extends 'app/base_client/base.html' %}
+{% block main %}
+<div class="sli" style="padding: 2% 8%">
+    <input type="text" id="price-slider" name="price" value="" />
+    <input type="hidden" id="price-min" name="min_price" />
+    <input type="hidden" id="price-max" name="max_price" />
+</div>
+<div class="filter-section end">
+    <label for="price-filter">Sort:</label>
+    <select id="price-filter">
+        <option value="">None</option>
+        <option value="asc">Low to High</option>
+        <option value="desc">High to Low</option>
+    </select>
+    <button id="clear-filter" class="">Clear Filters</button>
+</div>
+<div class="main">
+    {% include 'app/component/item.html'%}
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ion-rangeslider/2.3.1/js/ion.rangeSlider.min.js"></script>
+<link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/ion-rangeslider/2.3.1/css/ion.rangeSlider.min.css" />
+<script>
+    // document.getElementById('price-filter').addEventListener('change', function () {
+    //     var selectedOption = this.value;
+    //     updateUrl('price', selectedOption);
+    // });
+
+    document.getElementById('price-filter').addEventListener('change', function () {
+        var selectedOption = this.value;
+        var currentUrl = window.location.href;
+        var url = new URL(currentUrl);
+        url.searchParams.set('price', selectedOption);
+
+        localStorage.setItem('priceFilterValue', selectedOption);
+        window.location.href = url.toString();
+    });
+
+    window.addEventListener('DOMContentLoaded', (event) => {
+        var priceFilter = document.getElementById('price-filter');
+        var currentUrl = window.location.href;
+        var url = new URL(currentUrl);
+        var priceParam = url.searchParams.get('price');
+
+        if (priceParam) {
+            priceFilter.value = priceParam;
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var priceFilter = document.getElementById('price-filter').value;
+        var priceFilterValue = localStorage.getItem('priceFilterValue') || '';
+        var priceRange = [200000, 1000000];
+
+        if (priceFilterValue) {
+            priceFilter = priceFilterValue;
+        }
+
+        var currentUrl = new URL(window.location.href);
+        var minPriceValue = currentUrl.searchParams.get('min_price') || localStorage.getItem('minPriceValue') || priceRange[0];
+        var maxPriceValue = currentUrl.searchParams.get('max_price') || localStorage.getItem('maxPriceValue') || priceRange[1];
+
+        var slider = $("#price-slider").ionRangeSlider({
+            type: "double",
+            grid: true,
+            min: priceRange[0],
+            max: priceRange[1],
+            from: minPriceValue,
+            to: maxPriceValue,
+            prefix: "VND",
+            onFinish: function (data) {
+                var currentUrl = new URL(window.location.href);
+
+                currentUrl.searchParams.set('min_price', data.from);
+                currentUrl.searchParams.set('max_price', data.to);
+
+                localStorage.setItem('minPriceValue', data.from);
+                localStorage.setItem('maxPriceValue', data.to);
+
+                window.location.href = currentUrl.toString();
+            },
+        });
+
+        slider.data("ionRangeSlider").update({
+            from: minPriceValue,
+            to: maxPriceValue
+        });
+
+        document.getElementById('price-min').value = minPriceValue;
+        document.getElementById('price-max').value = maxPriceValue;
+
+        var paginationLinks = document.querySelectorAll('.pagination a');
+        paginationLinks.forEach(function (link) {
+            if (link.href.indexOf('?') !== -1) {
+                link.href = link.href + `&min_price=${minPriceValue}&max_price=${maxPriceValue}&price=${priceFilter}`;
+            } else {
+                link.href = link.href + `?min_price=${minPriceValue}&max_price=${maxPriceValue}&price=${priceFilter}`;
+            }
+        });
+
+        // Xử lý sự kiện khi nhấn nút Clear Filters
+        document.getElementById('clear-filter').addEventListener('click', function () {
+            var currentUrl = new URL(window.location.href);
+
+            currentUrl.searchParams.delete('min_price');
+            currentUrl.searchParams.delete('max_price');
+            currentUrl.searchParams.delete('price');
+
+            localStorage.removeItem('minPriceValue');
+            localStorage.removeItem('maxPriceValue');
+            localStorage.removeItem('priceFilterValue');
+
+            window.location.href = currentUrl.toString();
+        });
+    });
+</script>
+{% include 'app/component/pagination.html'%}
+{% endblock %}

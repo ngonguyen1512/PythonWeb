@@ -1,0 +1,54 @@
+{% load humanize %}
+{% for product in products %}
+<a style="text-decoration: none; color: #000;"
+    href="{% url 'detail' categories=product.category|slugify samples=product.sample|slugify productname=product.name|slugify productid=product.id%}">
+    <div class="item">
+        <div class="card border-0" style="width: 100%;">
+            <div class="images">
+                <img src="{{product.imageURL}}" class="card-img-top" alt="{{product.name}}">
+            </div>
+            <div class="card-body">
+                <form action="" method="POST">
+                    {% csrf_token %}
+                    <div class="cart-text name-like_unlike">
+                        <p class="">{{product.name}}</p>
+                        {% if request.user.is_authenticated %}
+                        <div class="like-unlike">
+                            <input type="hidden" name="productsid" value="{{product.id}}" />
+
+                            <button id="likeButton" class="like">
+                                {% if product.is_liked %}
+                                <i class='bx bxs-heart'></i>
+                                {% else %}
+                                <i class='bx bx-heart'></i>
+                                {% endif %}
+                            </button>
+
+                        </div>
+                        {% endif %}
+                    </div>
+                </form>
+                {% if product.discount == 0 %}
+                <div class="card-text text-center">
+                    <p class="price">{{product.price|intcomma}}<span>đ</span></p>
+                </div>
+                {% else %}
+                <div class="card-text center promotion">
+                    <p class="discount">-{{product.discount}}%</p>
+                    <p class="price">{{ product.discounted_price|floatformat:0|intcomma }}<span>đ</span></p>
+                    <p class="price_origin">{{product.price|intcomma}}<span>đ</span></p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</a>
+{% endfor %}
+<script>
+    document.querySelectorAll('.like').forEach(function (button) {
+        button.addEventListener('click', function (event) {
+            // Ngăn chặn sự kiện lan truyền lên thẻ <a>
+            event.stopPropagation();
+        });
+    });
+</script>

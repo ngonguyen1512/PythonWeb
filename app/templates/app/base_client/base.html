@@ -53,7 +53,7 @@
     {% load humanize %}
     {% include 'app/base_client/header.html' with categories=categories samples=samples %}
     {% block register_login_forgot %}{% endblock %}
-    {% if request.path == '/' and customer and similar_products%}
+    {% if request.path == '/' %}
     {% block buymore %}
     <div class="buymore">
         <div class="close end"><i class='bx bx-x' id="closeBtn"></i></div>

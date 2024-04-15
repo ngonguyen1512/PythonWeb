@@ -36,10 +36,6 @@ admin.site.register(Product, ProductAdmin)
 class ColorForm(forms.ModelForm):
     state = forms.ChoiceField(choices=[('active', 'Active'), ('no active', 'No Active')], widget=StateSelectWidget)
 
-    class Meta:
-        model = Color
-        fields = '__all__'
-
 class ColorAdmin(admin.ModelAdmin):
     list_display = ['id', 'code', 'name', 'state']
     search_fields = ['name']
@@ -50,7 +46,6 @@ admin.site.register(Color, ColorAdmin)
 
 class SizeForm(forms.ModelForm):
     state = forms.ChoiceField(choices=[('active', 'Active'), ('no active', 'No Active')], widget=StateSelectWidget)
-
     class Meta:
         model = Size
         fields = '__all__'
@@ -65,6 +60,8 @@ admin.site.register(Size, SizeAdmin)
 
 class LikeAdmin(admin.ModelAdmin):
     list_display = ['id', 'customer', 'product']
+    def has_add_permission(self, request):
+        return False
     def has_change_permission(self, request, obj=None):
         return False
     def has_delete_permission(self, request, obj=None):
@@ -73,10 +70,6 @@ admin.site.register(Like, LikeAdmin)
 
 class CategoryForm(forms.ModelForm):
     state = forms.ChoiceField(choices=[('active', 'Active'), ('no active', 'No Active')], widget=StateSelectWidget)
-
-    class Meta:
-        model = Category
-        fields = '__all__'
 
 class CategroyAdmin(admin.ModelAdmin):
     list_display = ['id', 'name', 'state']
@@ -89,10 +82,6 @@ admin.site.register(Category, CategroyAdmin)
 class SampleForm(forms.ModelForm):
     state = forms.ChoiceField(choices=[('active', 'Active'), ('no active', 'No Active')], widget=StateSelectWidget)
 
-    class Meta:
-        model = Sample
-        fields = '__all__'
-
 class SampleAdmin(admin.ModelAdmin):
     list_display = ['id', 'category', 'name', 'state']
     search_fields = ['category__name', 'name', 'state']
@@ -104,6 +93,8 @@ admin.site.register(Sample, SampleAdmin)
 
 class CartAdmin(admin.ModelAdmin):
     list_display = ['id', 'customer']
+    def has_add_permission(self, request):
+        return False
     def has_change_permission(self, request, obj=None):
         return False
     def has_delete_permission(self, request, obj=None):
@@ -112,6 +103,8 @@ admin.site.register(Cart, CartAdmin)
 
 class CartDetailAdmin(admin.ModelAdmin):
     list_display = ['id', 'cart', 'product', 'size', 'quantity']
+    def has_add_permission(self, request):
+        return False
     def has_change_permission(self, request, obj=None):
         return False
     def has_delete_permission(self, request, obj=None):

@@ -195,7 +195,7 @@ class OrderAdmin(admin.ModelAdmin):
                 else:
                     quantity_obj.quantity += item.quantity
 
-                quantity_obj.state = 'No active' if quantity_obj.quantity == 0 else 'Active'
+                # quantity_obj.state = 'No active' if quantity_obj.quantity == 0 else 'Active'
                 quantity_obj.save()
     # Override phương thức save_related để không lưu các formset liên quan
     def save_related(self, request, form, formsets, change):
@@ -219,6 +219,11 @@ class OrderDetailAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
+    def product_id(self, obj):
+        return obj.product.id  
+
+    product_id.short_description = 'Product ID'
+
 admin.site.register(OrderDetail, OrderDetailAdmin)
 
 class StateSelectWidget(forms.Select):
@@ -228,10 +233,6 @@ class StateSelectWidget(forms.Select):
 
 class QuantityForm(forms.ModelForm):
     state = forms.ChoiceField(choices=[('active', 'Active'), ('no active', 'No Active')], widget=StateSelectWidget)
-
-    class Meta:
-        model = Quantity
-        fields = '__all__'
 
 class QuantityAdmin(admin.ModelAdmin):
     list_display = ['id', 'product', 'size', 'quantity', 'state']

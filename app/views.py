@@ -1,44 +1,29 @@
-from itertools import chain
+import re
+import ssl
 import json
 import random
-import re
 import string
 import smtplib
-import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
-import ssl
-ssl._create_default_https_context = ssl._create_unverified_context
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
-from keras.applications.resnet50 import ResNet50, preprocess_input
-from tensorflow.keras.preprocessing import image
-from itertools import chain
-from sklearn.feature_extraction.text import TfidfVectorizer
+import pandas as pd
 from .models import *
+from itertools import chain
 from django.contrib import messages
 from django.http import JsonResponse
 from email.mime.text import MIMEText
-from django.core.files.storage import default_storage
 from email.mime.multipart import MIMEMultipart
-from django.db.models import F, Sum, Case, Value, When, Q
 from django.core.paginator import Paginator, EmptyPage
-from django.shortcuts import render, get_object_or_404, redirect
+from sklearn.metrics.pairwise import cosine_similarity
 from django.contrib.auth import authenticate, login, logout
+from sklearn.feature_extraction.text import TfidfVectorizer
+from django.shortcuts import render, get_object_or_404, redirect
+ssl._create_default_https_context = ssl._create_unverified_context
+from django.db.models import Sum, Case, Value, When, Q, Value, Count, When, IntegerField
 
-# Initialize ResNet50 model
-resnet_model = ResNet50(weights='imagenet', include_top=False)
-def create_mlp_model(input_dim):
-    model = Sequential()
-    model.add(Dense(128, input_dim=input_dim, activation='relu'))
-    model.add(Dense(64, activation='relu'))
-    model.add(Dense(32, activation='relu'))
-    return model
-mlp_model = create_mlp_model(3)
-
-ACTIVE_STATE = State.objects.get(name='Active')
-NO_ACTIVE_STATE = State.objects.get(name='No active')
 # * _active_samples là biến toàn cục để lưu trữ kết quả của hàm get_active_samples()
 _active_samples = None 
+DONE_STATE = State.objects.get(name='Done')
+ACTIVE_STATE = State.objects.get(name='Active')
+NO_ACTIVE_STATE = State.objects.get(name='No active')
 
 # * Các hàm tái sử dụng
 def get_active_samples():
@@ -344,26 +329,31 @@ def like(request):
     context = {'products': products, 'samples': _active_samples, 'total_items': total_items, 'page_range': page_range}
     return render(request, 'app/client/like.html', context)
 
-def extract_image_features(img_path, model):
-    img = image.load_img(img_path, target_size=(224, 224))
-    img_array = image.img_to_array(img)
-    img_array = np.expand_dims(img_array, axis=0)
-    img_array = preprocess_input(img_array)
-    features = model.predict(img_array)
-    return features.flatten()
-
-def extract_color_features_with_mlp(img_path, mlp_model):
-    img = image.load_img(img_path, target_size=(224, 224))
-    img_array = image.img_to_array(img)
-    img_array = np.expand_dims(img_array, axis=0)
-    img_array = preprocess_input(img_array)
-    
-    color_features = np.mean(img_array, axis=(1, 2))
-    color_features = color_features.flatten()
-    
-    color_features = mlp_model.predict(color_features.reshape(1, -1))
-    
-    return color_features.flatten()
+def predict_ratings(user_id, user_product_matrix, similarity_df, k=3):
+    #Lấy ra hàng của ma trận tương đồng (similarity_df) tương ứng với user_id đã cho. 
+    user_similarities = similarity_df.loc[user_id]
+    #ấy ra tất cả các ratings mà người dùng đã cung cấp cho các sản phẩm, được biểu diễn trong ma trận người dùng-sản phẩm (user_product_matrix).
+    user_ratings = user_product_matrix.loc[user_id]
+    #Xác định những sản phẩm mà người dùng chưa từng đánh giá
+    unrated_items = user_ratings[user_ratings == 0].index  # Giả sử rating 0 là chưa rate
+    predictions = {}
+    for item in unrated_items:
+        #Trích xuất ra tất cả các ratings cho sản phẩm đang được xem xét (item) từ ma trận người dùng-sản phẩm. 
+        rated_by_others = user_product_matrix[item].dropna()
+        #Series chứa độ tương đồng của người dùng hiện tại với tất cả người dùng khác.
+        similarities = user_similarities.loc[rated_by_others.index]
+        #Từ Series độ tương đồng, phương thức nlargest(k) chọn ra k giá trị cao nhất. k là số người dùng tỉnh lệ tương đồng cao nhất
+        top_similar_users = similarities.nlargest(k)
+        print(top_similar_users)
+        #Tính tổng của tích giữa rating của các người dùng tương tự (cho sản phẩm đang xét) và độ tương đồng của họ với người dùng hiện tại.
+        numerator = sum(user_product_matrix.loc[user][item] * similarity for user, similarity in top_similar_users.items())
+        # Tính tổng trị tuyệt đối của độ tương đồng, dùng để chuẩn hóa tử số.
+        denominator = sum(abs(similarity) for similarity in top_similar_users)
+        # Nếu không có người dùng nào tương tự (hoặc độ tương đồng bằng 0), rating dự đoán sẽ được đặt là 0 để tránh lỗi chia cho 0.
+        predicted_rating = numerator / denominator if denominator != 0 else 0
+        #Rating dự đoán cho sản phẩm được lưu trữ trong dictionary predictions, với khóa là ID sản phẩm (item) và giá trị là rating dự đoán.
+        predictions[item] = predicted_rating
+    return predictions
 
 def home(request):
     categories = Category.objects.all()
@@ -385,52 +375,80 @@ def home(request):
     cart, items, total_items = get_cart_items(customer)
     
     # Calculate similar products based on liked products
-    if customer:
-        liked_products = Like.objects.filter(customer=customer.id).values_list('product_id', flat=True)
-        print("Liked products: " + str(liked_products))
-        
-        if not liked_products:
-            similar_products = ''
-        else:
-            liked_features = []
-            liked_color_features = []
-            for i, product_id in enumerate(liked_products, 1):
-                liked_features.append(extract_image_features(Product.objects.get(id=product_id).image.path, resnet_model))
-                liked_color_features.append(extract_color_features_with_mlp(Product.objects.get(id=product_id).image.path, mlp_model))
-            print("Like features: " + str(liked_features))
-            print("Like color features: " + str(liked_color_features))
-            all_pro = Product.objects.filter(state=ACTIVE_STATE).exclude(id__in=liked_products)
-            all_features = []
-            all_color_features = []
-            for i, product in enumerate(all_pro, 1):
-                print(f"Extracting {i}/{len(all_pro)}")
-                all_features.append(extract_image_features(product.image.path, resnet_model))
-                all_color_features.append(extract_color_features_with_mlp(product.image.path, mlp_model))
-            print("All features: " + str(all_features))
-            print("All color features: " + str(all_color_features))
-            
-            # Combine color features into the feature vector
-            liked_features_combined = [np.concatenate([liked_features[i], liked_color_features[i]]) for i in range(len(liked_features))]
-            all_features_combined = [np.concatenate([all_features[i], all_color_features[i]]) for i in range(len(all_features))]
-            
-            # Normalize the features
-            liked_features_combined = np.array(liked_features_combined) / np.linalg.norm(liked_features_combined, axis=1, keepdims=True)
-            all_features_combined = np.array(all_features_combined) / np.linalg.norm(all_features_combined, axis=1, keepdims=True)
-            
-            similarities = cosine_similarity(liked_features_combined, all_features_combined)
-            print("similarities: " + str(similarities))
-            
-            top_8_indices = similarities.mean(axis=0).argsort()[-8:][::-1]
-            print("Top 8: " + str(top_8_indices))
-            
-            # Convert QuerySet to list before accessing elements
-            similar_products = [all_pro[i] for i in top_8_indices.tolist()]
-            print("similar_products: " + str(similar_products))
+    # # cf
+    similar_products = ''
+    if  customer:
+        #  Truy vấn dữ liệu mua hàng và like
+        customer = request.user if request.user.is_authenticated else ''
+        order_details = OrderDetail.objects.all()
+        likes = Like.objects.all()
+        # Tạo danh sách cho orders
+        order_data = [
+            {'user_id': detail.order.customer.id, 'product_id': detail.product.id, 'score': 5 * detail.quantity}
+            for detail in order_details
+            if detail.order.customer and detail.product
+        ]
+        print(order_data)
+        # Tạo danh sách cho likes
+        like_data = [
+            {'user_id': like.customer.id, 'product_id': like.product.id, 'score': 1}
+            for like in likes
+            if like.customer and like.product
+        ]
+        # Kết hợp dữ liệu và tạo DataFrame
+        data = order_data + like_data
+        df = pd.DataFrame(data)
+        print(df)
+        # Tạo ma trận người dùng-sản phẩm, tính tổng điểm cho mỗi cặp người dùng và sản phẩm
+        user_product_matrix = df.pivot_table(index='user_id', columns='product_id', values='score', aggfunc='sum', fill_value=0)
+        print('user_product_matrix')
+        print(user_product_matrix)
+        # Tính toán độ tương đồng giữa các người dùng
+        similarity_matrix = cosine_similarity(user_product_matrix)
+        similarity_df = pd.DataFrame(similarity_matrix, index=user_product_matrix.index, columns=user_product_matrix.index)
+        print('similarity_matrix')
+        print(similarity_matrix)
+
+        print('similarity_df')
+        print(similarity_df)
+
+        if customer.is_authenticated and customer.id in user_product_matrix.index:
+            #trả về một dictionary predicted_ratings mà khóa là ID sản phẩm và giá trị là rating dự đoán cho từng sản phẩm chưa được đánh giá bởi người dùng này.
+            predicted_ratings = predict_ratings(customer.id, user_product_matrix, similarity_df, k=3)
+            predicted_ratings_df = pd.DataFrame(list(predicted_ratings.items()), columns=['Product_ID', 'Predicted_Rating'])
+            print(predicted_ratings_df)
+            filtered_ratings_df = predicted_ratings_df[predicted_ratings_df['Predicted_Rating'] > 0]
+            #DataFrame được sắp xếp theo cột Predicted_Rating từ cao xuống thấp
+            top_product_ids = filtered_ratings_df.sort_values(by='Predicted_Rating', ascending=False).head(8)['Product_ID']
+            print(top_product_ids)
+            similar_products = Product.objects.filter(id__in=top_product_ids)
+            print(similar_products) 
     else:
-        similar_products = ''
+        # Tính điểm từ bảng OrderDetail
+        orders_scores = OrderDetail.objects.values('product_id').annotate(total_order_score=Sum('quantity') * 5).order_by()
+        # Tính điểm từ bảng Like
+        likes_scores = Like.objects.values('product_id').annotate(total_like_score=Count('id')).order_by()
+        # Biến đổi kết quả thành dictionary để dễ dàng truy cập và tính toán
+        orders_dict = {item['product_id']: item['total_order_score'] for item in orders_scores}
+        likes_dict = {item['product_id']: item['total_like_score'] for item in likes_scores}
+        # Kết hợp điểm từ orders và likes
+        product_scores = {}
+        product_ids = set(orders_dict.keys()).union(set(likes_dict.keys()))
+        for pid in product_ids:
+            product_scores[pid] = orders_dict.get(pid, 0) + likes_dict.get(pid, 0)
+        print(product_ids)
+        print(product_scores)
+        # Sử dụen để ng Case và When tạo annotations cho điểm số trực tiếp trong queryset
+        score_cases = [When(id=pid, then=Value(score)) for pid, score in product_scores.items()]
+        products_with_scores = Product.objects.filter(id__in=product_ids).annotate(
+            score=Case(*score_cases, output_field=IntegerField())
+        ).order_by('-score')
+
+        # Lấy top sản phẩm có điểm cao nhất
+        similar_products = products_with_scores[:8] 
 
     # * Chain is used to loop through elements
-    for obj in chain(products, sellers, promotions):
+    for obj in chain(products, sellers, promotions, similar_products):
         obj.discounted_price = calculate_discounted_price(obj)
         obj.is_liked = Like.objects.filter(customer=customer, product=obj).exists() if customer else False
 
@@ -571,7 +589,7 @@ def detail(request, categories, samples, productname, productid):
 
     combined_descriptions = [
         f"{description} {color} {category}" 
-        for name, description, color, price, category in zip(
+        for description, color, category in zip(
             all_products_descriptions, all_products_colors, 
             all_products_categories
         )

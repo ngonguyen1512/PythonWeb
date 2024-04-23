@@ -428,7 +428,7 @@ def home(request):
         orders_scores = OrderDetail.objects.values('product_id').annotate(total_order_score=Sum('quantity') * 5).order_by()
         # Tính điểm từ bảng Like
         likes_scores = Like.objects.values('product_id').annotate(total_like_score=Count('id')).order_by()
-        # Biến đổi kết quả thành dictionary để dễ dàng truy cập và tính toán
+        # Biến đổi kết quả thành mảng để dễ dàng truy cập và tính toán
         orders_dict = {item['product_id']: item['total_order_score'] for item in orders_scores}
         likes_dict = {item['product_id']: item['total_like_score'] for item in likes_scores}
         # Kết hợp điểm từ orders và likes
@@ -436,16 +436,18 @@ def home(request):
         product_ids = set(orders_dict.keys()).union(set(likes_dict.keys()))
         for pid in product_ids:
             product_scores[pid] = orders_dict.get(pid, 0) + likes_dict.get(pid, 0)
-        print(product_ids)
-        print(product_scores)
-        # Sử dụen để ng Case và When tạo annotations cho điểm số trực tiếp trong queryset
+        print("product: ", product_ids)
+        print("score: ",product_scores)
+        # Sử dụng Case và When tạo annotations cho điểm số trực tiếp trong queryset
         score_cases = [When(id=pid, then=Value(score)) for pid, score in product_scores.items()]
         products_with_scores = Product.objects.filter(id__in=product_ids).annotate(
             score=Case(*score_cases, output_field=IntegerField())
         ).order_by('-score')
+        print("products_with_scores: ",products_with_scores)
 
         # Lấy top sản phẩm có điểm cao nhất
         similar_products = products_with_scores[:8] 
+        print("similar_products: ",similar_products)
 
     # * Chain is used to loop through elements
     for obj in chain(products, sellers, promotions, similar_products):
@@ -581,12 +583,13 @@ def detail(request, categories, samples, productname, productid):
     current_product_color = current_product.color.name if current_product.color else ""
     current_product_category = current_product.category.name if current_product.category else ""
 
-    # Tính toán sự tương đồng dựa trên nhiều thuộc tính
+    # Chuẩn bị thuộc tính về các sản phẩm khác
     all_products = Product.objects.filter(state=ACTIVE_STATE)
     all_products_descriptions = [product.infor for product in all_products]
     all_products_colors = [product.color.name if product.color else "" for product in all_products]
     all_products_categories = [product.category.name if product.category else "" for product in all_products]
 
+    # Kết hợp thông tin và văn bản để vector hóa
     combined_descriptions = [
         f"{description} {color} {category}" 
         for description, color, category in zip(
@@ -594,7 +597,9 @@ def detail(request, categories, samples, productname, productid):
             all_products_categories
         )
     ]
-
+    # Vector hóa văn bản và tính toán độ tương tự
+    # chuyển đổi văn bản của mỗi sản phẩm thành vector dựa trên tần suất xuất hiện của từng từ, giảm trọng số của những từ 
+    # xuất hiện thường xuyên trong tất cả các mô tả (sử dụng TF-IDF).
     vectorizer = TfidfVectorizer(stop_words='english')
     tfidf_matrix = vectorizer.fit_transform(combined_descriptions)
     current_product_vector = vectorizer.transform([f"{current_product_description} {current_product_color} {current_product_category}"])

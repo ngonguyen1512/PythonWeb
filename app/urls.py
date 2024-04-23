@@ -20,3 +20,6 @@ urlpatterns = [
     path('<slug:categories>/<slug:samples>/', views.rental, name='rental'),
     path('<slug:categories>/<slug:samples>/<slug:productname>/<slug:productid>/', views.detail, name='detail'),
 ]
+
+# "slug" sử dụng để chỉ một chuỗi ký tự được chuẩn hóa (phiên bản rút gọn). 
+# Slug được thiết kế để chỉ chứa các chữ cái, số, gạch ngang (-) hoặc gạch dưới (_), 

@@ -54,7 +54,6 @@
     {% include 'app/base_client/header.html' with categories=categories samples=samples %}
     {% block register_login_forgot %}{% endblock %}
     {% if request.path == '/' %}
-    {% block buymore %}
     <div class="buymore">
         <div class="close end"><i class='bx bx-x' id="closeBtn"></i></div>
         <div class="item_buymore">
@@ -91,7 +90,6 @@
             {% endfor %}
         </div>
     </div>
-    {% endblock %}
     {% endif %}
     {% block slide %}{% endblock slide %}
     {% block title%}{% endblock title%}

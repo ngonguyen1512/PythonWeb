@@ -45,8 +45,8 @@
                             <td>{{ order.date|date:"Y-m-d" }}</td>
                             <td>{{ order.fee|intcomma }}đ</td>
                             <td>{{ order.total|intcomma }}đ</td>
-                            <td>{{ order.accept }}đ</td>
-                            <td>{{ order.shipper }}đ</td>
+                            <td>{{ order.accept }}</td>
+                            <td>{{ order.shipper }}</td>
                             {% if order.state.name == "Wait" %}
                             <td style="color: #FFD700">{{ order.state }}</td>
                             {% elif order.state.name == "Delivery" %}

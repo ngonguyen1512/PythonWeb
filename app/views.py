@@ -258,6 +258,7 @@ def search(request):
     products = None
     if request.method == "POST":
         searched = request.POST.get("searched", "")
+        
         products = Product.objects.filter(name__contains=searched)
         productsid = request.POST.get('productsid')
         if customer.is_authenticated and productsid:
@@ -426,8 +427,10 @@ def home(request):
     else:
         # Tính điểm từ bảng OrderDetail
         orders_scores = OrderDetail.objects.values('product_id').annotate(total_order_score=Sum('quantity') * 5).order_by()
+        print('orders: \n' ,orders_scores, '\n')
         # Tính điểm từ bảng Like
         likes_scores = Like.objects.values('product_id').annotate(total_like_score=Count('id')).order_by()
+        print("likes: \n" ,likes_scores, '\n')
         # Biến đổi kết quả thành mảng để dễ dàng truy cập và tính toán
         orders_dict = {item['product_id']: item['total_order_score'] for item in orders_scores}
         likes_dict = {item['product_id']: item['total_like_score'] for item in likes_scores}
@@ -436,8 +439,8 @@ def home(request):
         product_ids = set(orders_dict.keys()).union(set(likes_dict.keys()))
         for pid in product_ids:
             product_scores[pid] = orders_dict.get(pid, 0) + likes_dict.get(pid, 0)
-        print("product: ", product_ids)
-        print("score: ",product_scores)
+        print("product: ", product_ids, '\n')
+        print("score: \n",product_scores, '\n')
         # Sử dụng Case và When tạo annotations cho điểm số trực tiếp trong queryset
         score_cases = [When(id=pid, then=Value(score)) for pid, score in product_scores.items()]
         products_with_scores = Product.objects.filter(id__in=product_ids).annotate(
@@ -493,7 +496,15 @@ def all(request):
     price_order = request.GET.get('price')
 
     if min_price and max_price:
-        all_products = all_products.filter(price__gte=min_price, price__lte=max_price)
+        min_price = float(min_price)  # Chuyển đổi min_price thành số thực
+        max_price = float(max_price)
+        # all_products = all_products.filter(price__gte=min_price, price__lte=max_price)
+        filtered_products = []
+        for product in all_products:
+            discounted_price = calculate_discounted_price(product)
+            if min_price <= discounted_price <= max_price:
+                filtered_products.append(product)
+        all_products = filtered_products
 
     if price_order == 'asc':
         all_products = sorted(all_products, key=lambda x: calculate_discounted_price(x))
@@ -604,7 +615,7 @@ def detail(request, categories, samples, productname, productid):
     tfidf_matrix = vectorizer.fit_transform(combined_descriptions)
     current_product_vector = vectorizer.transform([f"{current_product_description} {current_product_color} {current_product_category}"])
     similarity_scores = cosine_similarity(current_product_vector, tfidf_matrix)
-
+    print("Ma trạn: \n", similarity_scores)
     # Lấy ra các chỉ số của 8 sản phẩm có sự tương đồng cao nhất (trừ sản phẩm hiện tại)
     similar_product_indices = similarity_scores.argsort()[0][-9:]
 
